@@ -1,12 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // Removed 'output: export' to support dynamic routes and server-side functionality
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { unoptimized: true },
+  images: { 
+    unoptimized: true 
+  },
   experimental: {
-    serverActions: true,
+    // Updated serverActions configuration for Next.js 15+
+    serverActions: {
+      allowedOrigins: ['localhost:3000']
+    },
   },
 };
 
