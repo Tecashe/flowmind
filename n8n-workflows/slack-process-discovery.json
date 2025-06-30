@@ -1,0 +1,140 @@
+{
+  "name": "FlowMind - Slack Process Discovery",
+  "nodes": [
+    {
+      "parameters": {
+        "channel": "general",
+        "text": "🤖 FlowMind Process Discovery Started",
+        "otherOptions": {}
+      },
+      "id": "slack-notify-start",
+      "name": "Notify Start",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://slack.com/api/conversations.history",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "options": {
+          "qs": {
+            "channel": "={{ $json.channel }}",
+            "limit": 100
+          }
+        }
+      },
+      "id": "fetch-messages",
+      "name": "Fetch Channel Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FlowMind AI Process Discovery Logic\nconst messages = $input.all();\nconst processPatterns = [];\n\n// Analyze message patterns for process discovery\nfor (const item of messages) {\n  const text = item.json.text || '';\n  \n  // Look for process indicators\n  const processKeywords = [\n    'approval', 'review', 'submit', 'complete',\n    'workflow', 'process', 'step', 'next',\n    'waiting for', 'blocked by', 'depends on'\n  ];\n  \n  const foundKeywords = processKeywords.filter(keyword => \n    text.toLowerCase().includes(keyword)\n  );\n  \n  if (foundKeywords.length > 0) {\n    processPatterns.push({\n      timestamp: item.json.ts,\n      user: item.json.user,\n      text: text,\n      keywords: foundKeywords,\n      processScore: foundKeywords.length * 10\n    });\n  }\n}\n\n// Group by potential processes\nconst discoveredProcesses = processPatterns\n  .filter(p => p.processScore > 20)\n  .map(p => ({\n    id: `process_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n    name: `Discovered Process: ${p.keywords.join(', ')}`,\n    source: 'Slack Analysis',\n    confidence: Math.min(p.processScore, 100),\n    participants: [p.user],\n    keywords: p.keywords,\n    rawData: p\n  }));\n\nreturn discoveredProcesses.map(process => ({ json: process }));"
+      },
+      "id": "ai-analysis",
+      "name": "AI Process Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.FLOWMIND_API_URL }}/api/processes/discovered",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "processData",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "source",
+              "value": "slack_discovery"
+            },
+            {
+              "name": "organizationId",
+              "value": "{{ $env.FLOWMIND_ORG_ID }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-to-flowmind",
+      "name": "Save to FlowMind",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "channel": "general",
+        "text": "✅ Process Discovery Complete!\n\nFound {{ $json.length }} potential processes:\n{{ $json.map(p => `• ${p.name} (${p.confidence}% confidence)`).join('\\n') }}",
+        "otherOptions": {}
+      },
+      "id": "slack-notify-complete",
+      "name": "Notify Completion",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Notify Start": {
+      "main": [
+        [
+          {
+            "node": "Fetch Channel Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Channel Messages": {
+      "main": [
+        [
+          {
+            "node": "AI Process Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Process Analysis": {
+      "main": [
+        [
+          {
+            "node": "Save to FlowMind",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to FlowMind": {
+      "main": [
+        [
+          {
+            "node": "Notify Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/New_York"
+  },
+  "versionId": "1.0.0"
+}

@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 25% 6%;
+    --foreground: 210 40% 95%;
+    --card: 220 20% 8%;
+    --card-foreground: 210 40% 95%;
+    --popover: 220 20% 8%;
+    --popover-foreground: 210 40% 95%;
+    --primary: 240 85% 65%;
+    --primary-foreground: 220 25% 6%;
+    --secondary: 220 15% 12%;
+    --secondary-foreground: 210 40% 95%;
+    --muted: 220 15% 10%;
+    --muted-foreground: 210 20% 60%;
+    --accent: 280 85% 70%;
+    --accent-foreground: 220 25% 6%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 95%;
+    --border: 220 15% 15%;
+    --input: 220 15% 12%;
+    --ring: 240 85% 65%;
+    --chart-1: 240 85% 65%;
+    --chart-2: 280 85% 70%;
+    --chart-3: 200 85% 60%;
+    --chart-4: 160 85% 55%;
+    --chart-5: 320 85% 75%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/40 backdrop-blur-md border border-border/50;
+  }
+  
+  .glass-card {
+    @apply glass rounded-xl p-6 shadow-2xl;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+  }
+  
+  .glow {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Custom animations */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Process flow animations */
+.process-node {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.process-node:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+}
+
+.connection-line {
+  stroke-dasharray: 5 5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}

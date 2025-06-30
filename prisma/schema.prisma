@@ -1,0 +1,248 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                   String   @id @default(cuid())
+  name                 String
+  slug                 String   @unique
+  domain               String?
+  plan                 Plan     @default(STARTER)
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  users       User[]
+  processes   Process[]
+  integrations Integration[]
+  analytics   Analytics[]
+  
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  clerkId        String   @unique
+  email          String   @unique
+  firstName      String?
+  lastName       String?
+  role           Role     @default(USER)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  processOwned   Process[]    @relation("ProcessOwner")
+  comments       Comment[]
+  activities     Activity[]
+  
+  @@map("users")
+}
+
+model Process {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?
+  status          ProcessStatus @default(DRAFT)
+  category        String?
+  priority        Priority      @default(MEDIUM)
+  ownerId         String
+  organizationId  String
+  flowData        Json?
+  version         Int           @default(1)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  owner           User          @relation("ProcessOwner", fields: [ownerId], references: [id])
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  executions      Execution[]
+  comments        Comment[]
+  activities      Activity[]
+  metrics         ProcessMetric[]
+  
+  @@map("processes")
+}
+
+model Execution {
+  id          String          @id @default(cuid())
+  processId   String
+  status      ExecutionStatus @default(PENDING)
+  startedAt   DateTime        @default(now())
+  completedAt DateTime?
+  duration    Int?            // in milliseconds
+  errorMessage String?
+  metadata    Json?
+  
+  process     Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+  steps       ExecutionStep[]
+  
+  @@map("executions")
+}
+
+model ExecutionStep {
+  id          String      @id @default(cuid())
+  executionId String
+  stepName    String
+  status      StepStatus  @default(PENDING)
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+  duration    Int?
+  output      Json?
+  
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  
+  @@map("execution_steps")
+}
+
+model Integration {
+  id             String            @id @default(cuid())
+  name           String
+  type           IntegrationType
+  status         IntegrationStatus @default(INACTIVE)
+  config         Json
+  organizationId String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("integrations")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  processId String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  process   Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("comments")
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  title     String
+  description String?
+  userId    String?
+  processId String?
+  metadata  Json?
+  createdAt DateTime     @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id])
+  process   Process? @relation(fields: [processId], references: [id])
+  
+  @@map("activities")
+}
+
+model ProcessMetric {
+  id               String   @id @default(cuid())
+  processId        String
+  executionTime    Float?   // average execution time
+  successRate      Float?   // success rate percentage
+  bottleneckSteps  String[] // array of step names that are bottlenecks
+  improvementScore Int?     // AI-generated improvement score
+  lastCalculated   DateTime @default(now())
+  
+  process          Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+  
+  @@map("process_metrics")
+}
+
+model Analytics {
+  id             String   @id @default(cuid())
+  organizationId String
+  metric         String   // e.g., "total_processes", "active_executions"
+  value          Float
+  timestamp      DateTime @default(now())
+  metadata       Json?
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("analytics")
+}
+
+enum Plan {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  MANAGER
+  USER
+  VIEWER
+}
+
+enum ProcessStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum IntegrationType {
+  SLACK
+  TEAMS
+  ASANA
+  TRELLO
+  SALESFORCE
+  HUBSPOT
+  ZENDESK
+  GITHUB
+  JIRA
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  PENDING
+}
+
+enum ActivityType {
+  PROCESS_CREATED
+  PROCESS_UPDATED
+  PROCESS_EXECUTED
+  USER_INVITED
+  INTEGRATION_ADDED
+  COMMENT_ADDED
+}
