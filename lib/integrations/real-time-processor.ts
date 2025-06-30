@@ -69,7 +69,7 @@ export class RealTimeProcessor {
       this.processingQueue.set(processId, {
         ...this.processingQueue.get(processId),
         status: 'failed',
-        error: error.message
+        // error: error.message
       })
 
       throw error

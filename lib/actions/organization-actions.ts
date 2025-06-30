@@ -53,6 +53,11 @@ export async function getUserOrganizations() {
   })
 }
 
+
+
+
+
+
 export async function switchOrganization(organizationId: string) {
   const { userId } = auth()
   if (!userId) throw new Error('Unauthorized')
@@ -61,7 +66,10 @@ export async function switchOrganization(organizationId: string) {
   const userOrg = await prisma.user.findFirst({
     where: {
       clerkId: userId,
-      organizationId: organizationId
+      organizationId: organizationId,
+    },
+    include: {
+      organization: true  // Add this to include the organization relation
     }
   })
 
@@ -79,6 +87,8 @@ export async function switchOrganization(organizationId: string) {
   revalidatePath('/dashboard')
   return userOrg.organization
 }
+
+
 
 export async function inviteUserToOrganization(email: string, role: 'MANAGER' | 'USER' | 'VIEWER') {
   const { userId, orgId } = auth()
